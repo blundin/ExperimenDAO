@@ -16,7 +16,10 @@ module.exports = async function (deployer) {
       pool = instance;
       const whitelistRole = await token.WHITELISTED();
       
+      await token.setInvestmentPool(investmentPool.address);
       await token.grantRole(whitelistRole, investmentPool.address);
       await token.transferOwnership(investmentPool.address);
+
+      // console.log(await token);
     });
 };

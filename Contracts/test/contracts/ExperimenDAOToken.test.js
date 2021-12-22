@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 
-const { accounts, contract } = require('@openzeppelin/test-environment');
-const chai = require('chai');
-const expect = chai.expect;
 const {
-  BN,           // Big Number support
-  constants,    // Common constants, like the zero address and largest integers
-  expectEvent,  // Assertions for emitted events
-  expectRevert, // Assertions for transactions that should fail
-} = require('@openzeppelin/test-helpers');
+  accounts,
+  contract,
+  chai,
+  expect,
+  BN,           
+  constants,    
+  expectEvent,  
+  expectRevert
+} = require('../setup/testEnvironment.js');
 
 const ExperimenDAOToken = contract.fromArtifact('ExperimenDAOToken');
 
-describe('ExperimenDAOToken', function() {
-  const [ owner, whitelisted1, whitelisted2, notlisted1, notlisted2 ] = accounts;
+describe('ExperimenDAOToken', async function() {
+  const [ owner, whitelisted1, whitelisted2, notlisted1, notlisted2, fakePool ] = accounts;
   const startingBalances = new BN('1000000000000000000000');
   var whitelistRole;
   var token;
@@ -33,16 +34,18 @@ describe('ExperimenDAOToken', function() {
     await token.grantRole(whitelistRole, whitelisted2, { from: owner });
   });
 
-  it('the deployer is the owner', async function() {
-    expect(await token.owner()).to.equal(owner);
+  describe('Contract creation', async function() {
+    it('the deployer is the owner', async function() {
+      expect(await token.owner()).to.equal(owner);
+    });
+
+    it('has the right initialSupply', async function() {
+      const expectedSupply = new BN('1000000000000000000000000');
+      expect(await token.totalSupply()).to.be.bignumber.equal(expectedSupply);
+    });
   });
 
-  it('has the right initialSupply', async function() {
-    const expectedSupply = new BN('1000000000000000000000000');
-    expect(await token.totalSupply()).to.be.bignumber.equal(expectedSupply);
-  });
-
-  describe('AccessControl', function() {
+  describe('AccessControl', async function() {
     beforeEach(async function() {});
 
     it('grants the Whitelist role correctly', async function() {
@@ -50,13 +53,27 @@ describe('ExperimenDAOToken', function() {
       expect(await token.hasRole(whitelistRole, notlisted1, { from: owner })).to.be.true;
     });
 
+    it('does not grant the Whitelist role from non-owner', async function() {
+      await expectRevert(
+        token.grantRole(whitelistRole, notlisted1, { from: notlisted2 }),
+        "AccessControl"
+      );
+    });
+
     it('revokes the Whitelist role correctly', async function() {
       await token.revokeRole(whitelistRole, whitelisted1, { from: owner });
       expect(await token.hasRole(whitelistRole, whitelisted1, { from: owner })).to.be.false;
     });
+
+    it('does not grant the Whitelist role from non-owner', async function() {
+      await expectRevert(
+        token.revokeRole(whitelistRole, notlisted1, { from: notlisted2 }),
+        "AccessControl"
+      );
+    });
   });
 
-  describe('ERC20Pausable', function() {
+  describe('ERC20Pausable', async function() {
     beforeEach(async function() {});
 
     it('pauses correctly', async function() {
@@ -73,7 +90,7 @@ describe('ExperimenDAOToken', function() {
     });
   });
 
-  describe('Allowances', function() {
+  describe('Allowances', async function() {
     const allowance = new BN('25000000000000000000');
     const noAllowance = new BN('0');
 
@@ -93,7 +110,7 @@ describe('ExperimenDAOToken', function() {
     });
   });
 
-  describe('Transfers', function() {
+  describe('Transfers', async function() {
     const transferAmount = new BN('10000000000000000');
 
     it('allows a transfer to a whitelisted account', async function() {
@@ -106,6 +123,38 @@ describe('ExperimenDAOToken', function() {
         token.transfer(notlisted1, transferAmount, { from: owner }),
         "Invalid recipient"
       );
+    });
+  });
+
+  describe('InvestmentPool', async function() {
+    describe('with no initial pool', async function() {
+      it('can be set by the owner', async function() {
+        await token.setInvestmentPool(notlisted1, { from: owner });
+
+        const pool = await token.getInvestmentPool();
+        expect(pool).to.equal(notlisted1);
+      });
+    });
+
+    describe('with an initial pool', async function() {
+      beforeEach(async function() {
+        await token.setInvestmentPool(fakePool, { from: owner });
+      });
+
+      it('returns the correct address for InvestmentPool', async function() {
+        const pool = await token.getInvestmentPool();
+        expect(pool).to.equal(fakePool);
+      });
+
+      it('cannot be set by a non-owner', async function() {
+        await expectRevert(
+          token.setInvestmentPool(notlisted1, { from: notlisted2 }),
+          "caller is not the owner"
+        );
+
+        const pool = await token.getInvestmentPool();
+        expect(pool).to.equal(fakePool);
+      });
     });
   });
 });

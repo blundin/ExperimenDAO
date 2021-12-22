@@ -22,10 +22,11 @@ contract InvestmentPool is Ownable, AccessControl {
 
   constructor(ExperimenDAOToken _daoToken) {
     _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    _grantRole(ADMIN, msg.sender);
+    
     _setRoleAdmin(ADMIN, DEFAULT_ADMIN_ROLE);
     _setRoleAdmin(FOUNDER, ADMIN);
-
-    _grantRole(ADMIN, msg.sender);
+    _setRoleAdmin(MEMBER, ADMIN);
     
     daoToken = _daoToken;
   }
@@ -34,10 +35,13 @@ contract InvestmentPool is Ownable, AccessControl {
   function addFounder(address newFounder) public onlyAdmin {
     _grantRole(FOUNDER, newFounder);
     founders[newFounder] = true;
-    // addMember(newFounder);
+
+    _grantRole(MEMBER, newFounder);
+    daoToken.grantRole(daoToken.WHITELISTED(), newFounder);
+    members[newFounder] = true;
   }
 
-  modifier onlyFounder() {
+  modifier onlyFounder() { 
     require(isFounder(msg.sender) && founders[msg.sender], "Restricted to founders." );
     _;
   }
@@ -50,6 +54,7 @@ contract InvestmentPool is Ownable, AccessControl {
   function addMember(address newMember) public onlyAdmin {
     _grantRole(MEMBER, newMember);
     daoToken.grantRole(daoToken.WHITELISTED(), newMember);
+    members[newMember] = true;
   }
 
   // ADMIN functions
