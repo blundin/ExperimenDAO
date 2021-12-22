@@ -57,6 +57,16 @@ contract InvestmentPool is Ownable, AccessControl {
     members[newMember] = true;
   }
 
+  function isMember(address account) public virtual view returns (bool) {
+    return hasRole(MEMBER, account);
+  }
+
+  function removeMember(address goodbye) public onlyAdmin {
+    _revokeRole(MEMBER, goodbye);
+    daoToken.revokeRole(daoToken.WHITELISTED(), goodbye);
+    members[goodbye] = false;
+  }
+
   // ADMIN functions
   modifier onlyAdmin() {
     require(isAdmin(msg.sender), "Restricted to admins.");

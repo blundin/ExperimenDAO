@@ -17,7 +17,9 @@ const InvestmentPool = contract.fromArtifact('InvestmentPool');
 describe('InvestmentPool', async function() {
   const [ owner, 
     founder, 
-    toBeFounder, 
+    member,
+    toBeFounder,
+    toBeMember, 
     whitelisted1, 
     whitelisted2, 
     notlisted1, 
@@ -43,6 +45,7 @@ describe('InvestmentPool', async function() {
     pool = await InvestmentPool.new(token.address, { from: owner });
     whitelistRole = await token.WHITELISTED();
     adminRole = await pool.ADMIN();
+    memberRole = await pool.MEMBER();
 
     // Setup testing accounts
     await token.grantRole(whitelistRole, whitelisted1, { from: owner });
@@ -104,6 +107,41 @@ describe('InvestmentPool', async function() {
       it('denies access to non-admins to add a new FOUNDER', async function() {
         await expectRevert(
           pool.addFounder(notlisted1, { from: notlisted2 }),
+          "Restricted to admins."
+        );
+      });
+    });
+
+    describe('MEMBER', async function() {
+      beforeEach(async function() {
+        await pool.grantRole(memberRole, member, { from: admin });
+      });
+
+      it ('retrieves MEMBER status correctly', async function() {
+        expect(await pool.isMember(member)).to.be.true;
+        expect(await pool.isMember(toBeMember)).to.be.false;
+      });
+      
+      it('sets up new account as a MEMBER', async function() {
+        await pool.addMember(notlisted1, { from: admin });
+        expect(await pool.isMember(notlisted1)).to.be.true;
+      });
+
+      it('removes an account as a MEMBER', async function() {
+        await pool.removeMember(member, { from: admin });
+        expect(await pool.isMember(member)).to.be.false;
+      });
+
+      it('denies access to non-admins to add a new MEMBER', async function() {
+        await expectRevert(
+          pool.addMember(notlisted1, { from: notlisted2 }),
+          "Restricted to admins."
+        );
+      });
+
+      it('denies access to non-admins to remove a new MEMBER', async function() {
+        await expectRevert(
+          pool.removeMember(member, { from: notlisted2 }),
           "Restricted to admins."
         );
       });
