@@ -20,6 +20,12 @@ module.exports = async function (deployer) {
       await token.grantRole(whitelistRole, investmentPool.address);
       await token.transferOwnership(investmentPool.address);
 
-      // console.log(await token);
+      const decimals = 18;
+      const transferAmount = (initialSupply * (10 ** decimals)).toString();
+      console.log(transferAmount);
+      const transferBig = new BN(transferAmount);
+      console.log(transferBig.toString());
+
+      await token.transfer(investmentPool.address, transferBig);
     });
 };

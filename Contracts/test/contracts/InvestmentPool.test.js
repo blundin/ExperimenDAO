@@ -26,19 +26,19 @@ describe('InvestmentPool', async function() {
     notlisted2, 
     admin ] = accounts;
   const startingBalances = new BN('1000000000000000000000');
-  var whitelistRole;
-  var token, pool;
+  let whitelistRole, adminRole;
+  let token, pool;
 
-  before(async function() {
-    // console.log("----------- InvestmentPool Test Run Details -----------");
-    // console.log(`Owner: ${owner}`);
-    // console.log(`Founder: ${founder}`);
-    // console.log(`Admin: ${admin}`);
-    // console.log(`To Be Founder: ${toBeFounder}`);
-    // console.log(`Whitelisted 1: ${whitelisted1}`);
-    // console.log(`Not Listed 1: ${notlisted1}`);
-    // console.log("\n\n");
-  });
+  // before(async function() {
+  //   console.log("----------- InvestmentPool Test Run Details -----------");
+  //   console.log(`Owner: ${owner}`);
+  //   console.log(`Founder: ${founder}`);
+  //   console.log(`Admin: ${admin}`);
+  //   console.log(`To Be Founder: ${toBeFounder}`);
+  //   console.log(`Whitelisted 1: ${whitelisted1}`);
+  //   console.log(`Not Listed 1: ${notlisted1}`);
+  //   console.log("\n\n");
+  // });
 
   beforeEach(async function() {  
     token = await ExperimenDAOToken.new(1000000, { from: owner });
@@ -55,15 +55,31 @@ describe('InvestmentPool', async function() {
     // Mimic deploy script
     // console.log(`Pool contract address: ${pool.address}`);
     // console.log(`Token contract address: ${token.address}`);
-    await token.setInvestmentPool(pool.address, { from: owner });
+    // console.log(`Token owner address: ${owner}`);
+
+    await token.migrateInvestmentPool(pool.address, { from: owner });
     await token.transferOwnership(pool.address, { from: owner });
-    // await token.grantRole(whitelistRole, pool), { from: pool };
+
+    // console.log(`Total number of tokens: ${await (await token.totalSupply()).toString()}`);
+    // console.log(`Balance of tokens in contract: ${await token.balanceOf(token.address)}`);
+    // console.log(`Balance of tokens in owner: ${await token.balanceOf(owner)}`);
+    // console.log(`New token owner contract address: ${await token.owner()}`);
+    // console.log(`Token investment pool address: ${await token.getInvestmentPool()}`);
+    // console.log(`Token default admin role address: ${await token.DEFAULT_ADMIN_ROLE()}`);
   });
 
-  describe('Contract creation', async function() {
+  describe('Contract deployment', async function() {
     it('the deployer is the owner', async function() {
       expect(await pool.owner()).to.equal(owner);
     });
+
+    it('has the correct EXD token balance', async function() {
+      expect(await token.balanceOf(pool.address)).to.be.bignumber.equal(await token.totalSupply());
+    });
+  });
+
+  describe('Ownership', async function() {
+    // it()
 
     it('the owner is an ADMIN', async function() {
       const poolOwner = await pool.owner();

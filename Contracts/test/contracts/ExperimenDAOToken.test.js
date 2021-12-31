@@ -12,6 +12,7 @@ const {
 } = require('../setup/testEnvironment.js');
 
 const ExperimenDAOToken = contract.fromArtifact('ExperimenDAOToken');
+const InvestmentPool = contract.fromArtifact('InvestmentPool');
 
 describe('ExperimenDAOToken', async function() {
   const [ owner, whitelisted1, whitelisted2, notlisted1, notlisted2, fakePool ] = accounts;
@@ -41,6 +42,8 @@ describe('ExperimenDAOToken', async function() {
 
     it('has the right initialSupply', async function() {
       const expectedSupply = new BN('1000000000000000000000000');
+      // console.log(expectedSupply.toString());
+      // console.log((await token.totalSupply()).toString());
       expect(await token.totalSupply()).to.be.bignumber.equal(expectedSupply);
     });
   });
@@ -129,7 +132,7 @@ describe('ExperimenDAOToken', async function() {
   describe('InvestmentPool', async function() {
     describe('with no initial pool', async function() {
       it('can be set by the owner', async function() {
-        await token.setInvestmentPool(notlisted1, { from: owner });
+        await token.migrateInvestmentPool(notlisted1, { from: owner });
 
         const pool = await token.getInvestmentPool();
         expect(pool).to.equal(notlisted1);
@@ -137,23 +140,26 @@ describe('ExperimenDAOToken', async function() {
     });
 
     describe('with an initial pool', async function() {
+      let startingPool;
+
       beforeEach(async function() {
-        await token.setInvestmentPool(fakePool, { from: owner });
+        startingPool = await InvestmentPool.new(token.address, { from: owner });
+        await token.migrateInvestmentPool(startingPool.address, { from: owner });
       });
 
       it('returns the correct address for InvestmentPool', async function() {
         const pool = await token.getInvestmentPool();
-        expect(pool).to.equal(fakePool);
+        expect(pool).to.equal(startingPool.address);
       });
 
       it('cannot be set by a non-owner', async function() {
         await expectRevert(
-          token.setInvestmentPool(notlisted1, { from: notlisted2 }),
+          token.migrateInvestmentPool(notlisted1, { from: notlisted2 }),
           "caller is not the owner"
         );
 
         const pool = await token.getInvestmentPool();
-        expect(pool).to.equal(fakePool);
+        expect(pool).to.equal(startingPool.address);
       });
     });
   });

@@ -19,17 +19,30 @@ contract ExperimenDAOToken is ERC20PresetMinterPauser, Ownable {
     */
   constructor(uint256 _initialSupply) ERC20PresetMinterPauser("ExperimenDAO", "EXD") {
     _grantRole(WHITELISTED, msg.sender);
+    _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     _mint(msg.sender, _initialSupply * 10 ** 18);
   }
 
-  function setInvestmentPool(address newPoolAddress) external onlyOwner {
-    if (address(investmentPool) != address(0x0)) {
-      _revokeRole(DEFAULT_ADMIN_ROLE, address(investmentPool));
-    } 
+  function migrateInvestmentPool(address newPoolAddress) external onlyOwner {
+    address previousPool = address(investmentPool);
 
     investmentPool = InvestmentPool(newPoolAddress);
+    _grantRole(WHITELISTED, address(investmentPool));
     _grantRole(DEFAULT_ADMIN_ROLE, address(investmentPool));
+    
+    if (previousPool == address(0x0)) {
+      movePoolFrom(owner(), address(investmentPool));
+    } else {
+      movePoolFrom(previousPool, address(investmentPool));
+    }
   }
+
+  function movePoolFrom(address oldPool, address newPool) private {
+    uint256 currentBalance = balanceOf(oldPool);
+    _revokeRole(DEFAULT_ADMIN_ROLE, oldPool);
+    _revokeRole(WHITELISTED, oldPool);
+    _transfer(oldPool, newPool, currentBalance);
+  } 
 
   function getInvestmentPool() external view returns (address) {
     return address(investmentPool);
