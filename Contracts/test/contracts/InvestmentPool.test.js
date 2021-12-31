@@ -79,7 +79,7 @@ describe('InvestmentPool', async function() {
   });
 
   describe('Ownership', async function() {
-    // it()
+    it('')
 
     it('the owner is an ADMIN', async function() {
       const poolOwner = await pool.owner();
