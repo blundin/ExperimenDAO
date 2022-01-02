@@ -29,6 +29,8 @@ describe('ExperimenDAOToken', async function() {
   
   beforeEach(async function() {  
     token = await ExperimenDAOToken.new(1000000, { from: owner });
+    await token.initialize({ from: owner });
+
     whitelistRole = await token.WHITELISTED();
 
     await token.grantRole(whitelistRole, whitelisted1, { from: owner });
@@ -129,38 +131,38 @@ describe('ExperimenDAOToken', async function() {
     });
   });
 
-  describe('InvestmentPool', async function() {
-    describe('with no initial pool', async function() {
-      it('can be set by the owner', async function() {
-        await token.migrateInvestmentPool(notlisted1, { from: owner });
+  // describe('InvestmentPool', async function() {
+  //   describe('with no initial pool', async function() {
+  //     it('can be set by the owner', async function() {
+  //       await token.migrateInvestmentPool(notlisted1, { from: owner });
 
-        const pool = await token.getInvestmentPool();
-        expect(pool).to.equal(notlisted1);
-      });
-    });
+  //       const pool = await token.getInvestmentPool();
+  //       expect(pool).to.equal(notlisted1);
+  //     });
+  //   });
 
-    describe('with an initial pool', async function() {
-      let startingPool;
+  //   describe('with an initial pool', async function() {
+  //     let startingPool;
 
-      beforeEach(async function() {
-        startingPool = await InvestmentPool.new(token.address, { from: owner });
-        await token.migrateInvestmentPool(startingPool.address, { from: owner });
-      });
+  //     beforeEach(async function() {
+  //       startingPool = await InvestmentPool.new(token.address, { from: owner });
+  //       await token.migrateInvestmentPool(startingPool.address, { from: owner });
+  //     });
 
-      it('returns the correct address for InvestmentPool', async function() {
-        const pool = await token.getInvestmentPool();
-        expect(pool).to.equal(startingPool.address);
-      });
+  //     it('returns the correct address for InvestmentPool', async function() {
+  //       const pool = await token.getInvestmentPool();
+  //       expect(pool).to.equal(startingPool.address);
+  //     });
 
-      it('cannot be set by a non-owner', async function() {
-        await expectRevert(
-          token.migrateInvestmentPool(notlisted1, { from: notlisted2 }),
-          "caller is not the owner"
-        );
+  //     it('cannot be set by a non-owner', async function() {
+  //       await expectRevert(
+  //         token.migrateInvestmentPool(notlisted1, { from: notlisted2 }),
+  //         "caller is not the owner"
+  //       );
 
-        const pool = await token.getInvestmentPool();
-        expect(pool).to.equal(startingPool.address);
-      });
-    });
-  });
+  //       const pool = await token.getInvestmentPool();
+  //       expect(pool).to.equal(startingPool.address);
+  //     });
+  //   });
+  // });
 });

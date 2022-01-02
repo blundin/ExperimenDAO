@@ -42,44 +42,34 @@ describe('InvestmentPool', async function() {
 
   beforeEach(async function() {  
     token = await ExperimenDAOToken.new(1000000, { from: owner });
-    pool = await InvestmentPool.new(token.address, { from: owner });
+    pool = await InvestmentPool.new({ from: owner });
     whitelistRole = await token.WHITELISTED();
     adminRole = await pool.ADMIN();
     memberRole = await pool.MEMBER();
+    tokenAdminRole = await token.DEFAULT_ADMIN_ROLE();
+
+    await pool.initialize(token.address, { from: owner });
 
     // Setup testing accounts
     await token.grantRole(whitelistRole, whitelisted1, { from: owner });
     await token.grantRole(whitelistRole, admin, { from: owner });
     await pool.grantRole(adminRole, admin, { from: owner });
+    await token.grantRole(tokenAdminRole, pool.address, { from: owner });
 
-    // Mimic deploy script
-    // console.log(`Pool contract address: ${pool.address}`);
-    // console.log(`Token contract address: ${token.address}`);
-    // console.log(`Token owner address: ${owner}`);
-
-    await token.migrateInvestmentPool(pool.address, { from: owner });
-    await token.transferOwnership(pool.address, { from: owner });
-
-    // console.log(`Total number of tokens: ${await (await token.totalSupply()).toString()}`);
-    // console.log(`Balance of tokens in contract: ${await token.balanceOf(token.address)}`);
-    // console.log(`Balance of tokens in owner: ${await token.balanceOf(owner)}`);
-    // console.log(`New token owner contract address: ${await token.owner()}`);
-    // console.log(`Token investment pool address: ${await token.getInvestmentPool()}`);
-    // console.log(`Token default admin role address: ${await token.DEFAULT_ADMIN_ROLE()}`);
   });
 
   describe('Contract deployment', async function() {
     it('the deployer is the owner', async function() {
       expect(await pool.owner()).to.equal(owner);
     });
-
-    it('has the correct EXD token balance', async function() {
-      expect(await token.balanceOf(pool.address)).to.be.bignumber.equal(await token.totalSupply());
-    });
   });
 
   describe('Ownership', async function() {
-    it('')
+    it('the owner has the DEFUALT_ADMIN_ROLE', async function(){
+      const poolOwner = await pool.owner();
+      const defaultAdmin =  await pool.DEFAULT_ADMIN_ROLE();
+      expect(await pool.hasRole(defaultAdmin, poolOwner)).to.be.true;
+    });
 
     it('the owner is an ADMIN', async function() {
       const poolOwner = await pool.owner();
