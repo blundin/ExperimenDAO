@@ -35,22 +35,23 @@ contract DAOCoordinator is Ownable {
     initialized = true;
   }
 
+  modifier onlyInitialized() {
+    require(initialized, "DAOCoordinator: The coordinator must be initialized.");
+    _;
+  }
+
   /* ------------- Investment Pool ------------- */
-
   // TODO
-  function migrateInvestmentPool(address newPoolAddress) external onlyOwner {
+  /// @dev The deployer/owner of the InvestmentPool must transferOwnership()
+  /// to the DAOCoordinator before migrating.
+  function migrateInvestmentPool(address newPoolAddress) external onlyOwner onlyInitialized {
     require(newPoolAddress != ZERO_ADDRESS, "DAOCoordinator: You must pass in a new investment pool address.");
-    
-    address previousPool = address(investmentPool);
-    investmentPool = InvestmentPool(newPoolAddress);
+    InvestmentPool newPool = InvestmentPool(newPoolAddress);
 
-    // _grantRole(WHITELISTED, address(investmentPool));
-    // _grantRole(DEFAULT_ADMIN_ROLE, address(investmentPool));
+    require(address(this) == newPool.owner(), "DAOCoordinator: The DAOCoordinator must own the new InvestmentPool.");
+    investmentPool = newPool;
     
-    if (previousPool == address(0x0)) {
-      // movePoolFrom(owner(), address(investmentPool));
-    } else {
-      // movePoolFrom(previousPool, address(investmentPool));
-    }
+    daoToken.grantRole(daoToken.WHITELISTED(), address(investmentPool));
+    daoToken.grantRole(daoToken.DEFAULT_ADMIN_ROLE(), address(investmentPool));
   }
 }

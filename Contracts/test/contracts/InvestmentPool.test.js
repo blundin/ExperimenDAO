@@ -82,6 +82,9 @@ describe('InvestmentPool', async function() {
 
   describe('Roles', async function() {
     describe('ADMIN', async function() {
+
+      // TODO: Add tests to ensure that OTHER roles cannot add an admin
+
       beforeEach(async function() {});
 
       it('grants an account the ADMIN role', async function() {

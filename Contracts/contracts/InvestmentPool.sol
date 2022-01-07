@@ -20,7 +20,7 @@ contract InvestmentPool is Ownable, AccessControl {
 
   bool public initialized;
 
-  ExperimenDAOToken daoToken;
+  ExperimenDAOToken public daoToken;
   mapping(address => bool) founders;
   mapping(address => bool) members;
 
